@@ -383,6 +383,11 @@
                 <ul id="meals-list"></ul>
             </div>
             <button onclick="clearMeals()" style="background-color: #e74c3c;">Clear All Meals</button>
+            <div style="display: flex; gap: 10px; margin-top: 10px;">
+                <button onclick="exportData()" style="background-color: #3498db;">Export Data</button>
+                <button onclick="importData()" style="background-color: #2ecc71;">Import Data</button>
+                <input type="file" id="data-file-input" style="display: none;" accept=".json" onchange="handleFileSelect(event)">
+            </div>
         </div>
     </div>
     
@@ -457,19 +462,19 @@
         
         // Reference measures for descriptive text parsing
         const measurementReferences = [
-            { terms: ["cup", "cups", "c."], grams: 240 }, // Fixed: 1 cup = 16 tbsp = 240g
-            { terms: ["tbsp", "tbs", "tablespoon", "tablespoons", "tb", "tbl"], grams: 15 },
-            { terms: ["tsp", "teaspoon", "teaspoons", "ts", "t"], grams: 5 },
+            { terms: ["cup", "cups", "c."], grams: 160 }, // Cooked chickpeas/beans ~160g per cup
+            { terms: ["tbsp", "tbs", "tablespoon", "tablespoons", "tb", "tbl"], grams: 10 }, // About 10g per tbsp for beans
+            { terms: ["tsp", "teaspoon", "teaspoons", "ts", "t"], grams: 3 }, // About 3g
             { terms: ["gram", "grams", "g"], grams: 1 },
             { terms: ["ounce", "ounces", "oz"], grams: 28 },
             { terms: ["pound", "pounds", "lb", "lbs"], grams: 454 },
             { terms: ["handful", "hand"], grams: 30 },
-            { terms: ["slice", "slices"], grams: 20 },
+            { terms: ["slice", "slices"], grams: 25 }, // ~25g for a slice of bread
             { terms: ["stalk", "stalks"], grams: 40 },
             { terms: ["floret", "florets"], grams: 10 },
-            { terms: ["bowl", "bowls"], grams: 250 },
-            { terms: ["piece", "pieces"], grams: 30 },
-            { terms: ["patty", "patties"], grams: 100 }
+            { terms: ["bowl", "bowls"], grams: 200 }, // Medium bowl ~200g
+            { terms: ["piece", "pieces"], grams: 25 },
+            { terms: ["patty", "patties"], grams: 75 }
         ];
         
         // In-memory storage as fallback for localStorage
@@ -498,10 +503,11 @@
             }, 3000);
         }
         
-        // Debug helper
+        // Debug helper - UPDATED to not show debug panel
         function debug(message) {
-    console.log(message);
-    // Debug panel UI disabled for production
+            console.log(message);
+            // Debug panel UI disabled for production
+        }
         
         // Safe localStorage wrapper
         function safeStorage() {
@@ -680,6 +686,9 @@
             
             // Load saved data
             loadSavedData();
+            
+            // Set up file input listener for import
+            document.getElementById('data-file-input').addEventListener('change', handleFileSelect);
         };
         
         // Calculate protein based on weight and activity level
@@ -1532,6 +1541,58 @@
             } else {
                 showToast('Meal analyzed successfully!');
             }
+        }
+        
+        // Export data function
+        function exportData() {
+            const data = {
+                goals: JSON.parse(storage.get('protein-goals') || '{}'),
+                meals: JSON.parse(storage.get('protein-meals') || '[]')
+            };
+            
+            const dataStr = JSON.stringify(data);
+            const dataUri = 'data:application/json;charset=utf-8,'+ encodeURIComponent(dataStr);
+            
+            const exportFileDefaultName = 'vegan-protein-tracker-data.json';
+            
+            const linkElement = document.createElement('a');
+            linkElement.setAttribute('href', dataUri);
+            linkElement.setAttribute('download', exportFileDefaultName);
+            linkElement.click();
+            
+            showToast('Data exported successfully!');
+        }
+
+        // Import data function
+        function importData() {
+            const fileInput = document.getElementById('data-file-input');
+            fileInput.click();
+        }
+
+        // Process the imported file
+        function handleFileSelect(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const data = JSON.parse(e.target.result);
+                    
+                    if (data.goals) storage.set('protein-goals', JSON.stringify(data.goals));
+                    if (data.meals) storage.set('protein-meals', JSON.stringify(data.meals));
+                    
+                    // Reset the file input
+                    document.getElementById('data-file-input').value = '';
+                    
+                    // Reload the page to refresh data
+                    showToast('Data imported successfully! Refreshing...');
+                    setTimeout(() => window.location.reload(), 1500);
+                } catch (error) {
+                    showToast('Error importing data: Invalid file format');
+                }
+            };
+            reader.readAsText(file);
         }
     </script>
 </body>
