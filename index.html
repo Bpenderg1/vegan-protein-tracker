@@ -500,17 +500,8 @@
         
         // Debug helper
         function debug(message) {
-            console.log(message);
-            
-            const debugPanel = document.getElementById('debug-output');
-            const p = document.createElement('p');
-            p.textContent = message;
-            debugPanel.appendChild(p);
-            debugPanel.style.display = 'block';
-            
-            // Auto-scroll to bottom
-            debugPanel.scrollTop = debugPanel.scrollHeight;
-        }
+    console.log(message);
+    // Debug panel UI disabled for production
         
         // Safe localStorage wrapper
         function safeStorage() {
